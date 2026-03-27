@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Texas Hold'em Poker</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Impact&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="login-screen" class="screen active">
+        <div class="login-container">
+            <h1>Texas Hold'em</h1>
+            <p>本格カジノで友達とプレイしよう</p>
+            <div class="input-group">
+                <input type="text" id="player-name" placeholder="プレイヤー名" maxlength="10">
+            </div>
+            <div class="input-group">
+                <input type="text" id="room-code" placeholder="合言葉（ルームコード）" maxlength="15">
+            </div>
+            <button id="join-btn" class="btn primary-btn">ルームに参加 / 作成</button>
+            <div id="login-error" class="error-msg"></div>
+        </div>
+    </div>
+
+    <div id="game-screen" class="screen">
+        <div class="top-bar">
+            <div>
+                <span id="room-display">Room: --</span>
+                <button id="help-btn" class="btn small-btn help-btn">役の一覧 📜</button>
+            </div>
+            <button id="leave-btn" class="btn small-btn">退出</button>
+        </div>
+
+        <div class="main-layout">
+            <div class="table-container">
+                <div class="poker-table">
+                    <div class="table-center">
+                        <div class="pot-info">
+                            POT: <span id="pot-amount">0</span>
+                        </div>
+                        <div id="community-cards" class="card-area">
+                            <!-- コミュニティカード -->
+                        </div>
+                        <div class="game-message" id="game-message">
+                            プレイヤーの参加を待っています...
+                        </div>
+                    </div>
+
+                    <div id="players-container">
+                        <!-- 座席 -->
+                    </div>
+                    
+                    <!-- ディーラーのアイコン（ここからカードが飛ぶ演出の起点として使う） -->
+                    <div id="dealer-core" class="dealer-core"></div>
+                </div>
+
+                <!-- スマホ風の自分の特大手札をテーブルの中心下部にフロート配置 -->
+                <div class="hero-container-wrap">
+                    <div id="my-hand-name" class="hand-name-display my-hand"></div>
+                    <div id="hero-cards-container" class="hero-cards-container">
+                        <!-- 自分のカード -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右側の勝率（オッズ）特大表示パネル -->
+            <div class="right-panel">
+                <div id="odds-panel" class="odds-panel hidden">
+                    <h3>WIN PROBABILITY</h3>
+                    <div id="odds-content">
+                        <!-- ◯◯ 60% VS △△ 40% のような表示が入ります -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="action-panel">
+            <div class="player-info-bot">
+                <div class="stack-info">スタック: <span id="my-stack">5000</span></div>
+                <div class="bet-info">現在のベット: <span id="my-bet">0</span></div>
+            </div>
+            <div class="controls disabled" id="controls">
+                <button id="btn-fold" class="action-btn fold">Fold</button>
+                <button id="btn-check" class="action-btn check">Check</button>
+                <button id="btn-call" class="action-btn call">Call</button>
+                
+                <div class="raise-group">
+                    <button id="btn-raise" class="action-btn raise">Raise</button>
+                    <!-- スライダーと数字入力を併用 -->
+                    <input type="range" id="raise-slider" min="400" max="5000" step="10">
+                    <input type="number" id="raise-input" class="raise-input-num" min="400" max="5000">
+                </div>
+                
+                <button id="btn-allin" class="action-btn all-in">ALL-IN</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 役ランキングヘルプ（モーダル） -->
+    <div id="help-modal" class="modal">
+        <div class="modal-content">
+            <span id="close-help" class="close">&times;</span>
+            <h2>ポーカー役の強さ一覧</h2>
+            <ul class="hand-rankings">
+                <li><span class="rank-name">1. ロイヤルストレートフラッシュ</span> (同じマークの10,J,Q,K,A)</li>
+                <li><span class="rank-name">2. ストレートフラッシュ</span> (同じマークで連番の5枚)</li>
+                <li><span class="rank-name">3. フォー・オブ・ア・カインド</span> (同じ数字4枚)</li>
+                <li><span class="rank-name">4. フルハウス</span> (同数3枚と別同数2枚)</li>
+                <li><span class="rank-name">5. フラッシュ</span> (同じマーク5枚)</li>
+                <li><span class="rank-name">6. ストレート</span> (マーク問わず連番5枚)</li>
+                <li><span class="rank-name">7. スリー・オブ・ア・カインド</span> (同じ数字3枚)</li>
+                <li><span class="rank-name">8. ツーペア</span> (同じ数字2枚の組が2つ)</li>
+                <li><span class="rank-name">9. ワンペア</span> (同じ数字2枚の組が1つ)</li>
+                <li><span class="rank-name">10. ハイカード</span> (役なし、1番大きい数字の強さ)</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>

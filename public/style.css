@@ -1,0 +1,204 @@
+:root {
+    --table-green: #0f6634;
+    --table-border: #4a2f1d;
+    --gold: #d4af37;
+    --dark-bg: #1a1a1a;
+    --text-light: #f5f5f5;
+    --panel-bg: rgba(0, 0, 0, 0.7);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body { 
+    font-family: 'Roboto', sans-serif; 
+    background-color: var(--dark-bg); 
+    color: var(--text-light); 
+    /* iOSのSafari問題対策（URLバーの分だけ沈まないようにする） */
+    height: 100dvh; 
+    min-height: 100vh;
+    overflow: hidden; 
+}
+
+.screen { display: none; height: 100%; width: 100%; }
+.screen.active { display: flex; flex-direction: column; }
+
+/* ----- ログイン画面 ----- */
+#login-screen { justify-content: center; align-items: center; background: radial-gradient(circle, #2a2a2a 0%, #111 100%); }
+.login-container { background: var(--panel-bg); padding: 40px; border-radius: 12px; border: 2px solid var(--gold); text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.8); width: 90%; max-width: 400px; }
+.login-container h1 { font-family: 'Playfair Display', serif; color: var(--gold); margin-bottom: 10px; font-size: 36px; }
+.login-container p { margin-bottom: 30px; color: #ccc; }
+.input-group { margin-bottom: 20px; }
+.input-group input { width: 100%; padding: 12px; font-size: 16px; border: 1px solid #555; border-radius: 6px; background: #222; color: white; }
+.input-group input:focus { outline: none; border-color: var(--gold); }
+.btn { padding: 12px 24px; font-size: 16px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+.primary-btn { background: linear-gradient(180deg, #d4af37 0%, #aa8529 100%); color: #000; width: 100%; }
+.primary-btn:hover { filter: brightness(1.2); }
+.error-msg { color: #ff4444; margin-top: 15px; height: 20px; }
+
+/* ----- ゲーム画面 ----- */
+.top-bar { display: flex; justify-content: space-between; padding: 10px 20px; background: rgba(0,0,0,0.8); font-family: 'Playfair Display', serif; color: var(--gold); z-index: 200; position: relative;}
+.small-btn { padding: 5px 15px; background: #333; color: white; font-size: 14px; margin-left:10px;}
+.help-btn { background: #1976d2; border: 1px solid #42a5f5; }
+
+/* メインレイアウト（テーブルと右パネル） */
+.main-layout { display: flex; flex: 1; overflow: hidden; position: relative; }
+.table-container { flex: 7; display: flex; justify-content: center; align-items: center; position: relative; padding: 20px; }
+.right-panel { flex: 2; min-width: 250px; background: rgba(0,0,0,0.5); border-left: 2px solid #555; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 10px; z-index: 50; }
+
+/* 特大勝率パネル (格闘ゲーム風) */
+.odds-panel { background: rgba(20,0,0,0.8); border: 2px solid #ff5252; padding: 20px; border-radius: 12px; width: 100%; text-align: center; box-shadow: 0 0 30px rgba(255, 0, 0, 0.4); animation: pulsePanel 2s infinite alternate; transition: opacity 0.5s; }
+.odds-panel.hidden { opacity: 0; pointer-events: none; }
+.odds-panel h3 { font-style: italic; color: #ffeb3b; margin-bottom: 15px; font-size: 20px; letter-spacing: 2px; }
+.odds-player-row { margin-bottom: 15px; border-bottom: 1px solid #555; padding-bottom: 10px; }
+.odds-name { font-size: 20px; font-weight: bold; color: white; display: block; margin-bottom: 5px; }
+.odds-percent { font-family: 'Impact', sans-serif; font-size: 46px; color: #ff5252; text-shadow: 2px 2px 0 #000, -1px -1px 0 #fff; line-height: 1; display: block; }
+@keyframes pulsePanel { from { box-shadow: 0 0 20px rgba(255, 0, 0, 0.3); } to { box-shadow: 0 0 40px rgba(255, 0, 0, 0.8); } }
+
+/* ポーカーテーブル */
+.poker-table { width: 800px; height: 400px; background: radial-gradient(circle, #188d4c 0%, var(--table-green) 100%); border-radius: 200px; border: 15px solid var(--table-border); box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,0,0,0.5); position: relative; display: flex; justify-content: center; align-items: center; z-index: 10;}
+.dealer-core { position: absolute; top: 50%; left: 50%; width: 1px; height: 1px; }
+
+.table-center { display: flex; flex-direction: column; align-items: center; z-index: 10; margin-top: -30px; }
+.pot-info { background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 20px; margin-bottom: 15px; font-family: 'Playfair Display', serif; color: var(--gold); font-size: 20px; border: 1px solid var(--gold); }
+
+/* 一般的なカード */
+/* iOS Safari消失バグ回避のため、preserve-3dを外しZ-indexを明確に */
+.card-area { display: flex; gap: 10px; height: 90px; }
+.card { width: 60px; height: 90px; background: white; border-radius: 5px; border: 1px solid #ccc; box-shadow: 2px 2px 5px rgba(0,0,0,0.3); display: flex; justify-content: center; align-items: center; font-size: 22px; font-weight: bold; position: relative; background-size: cover; z-index: 20; -webkit-transform: translateZ(0); transform: translateZ(0); }
+.card.hidden { background: repeating-linear-gradient(45deg, #b22222, #b22222 10px, #8b0000 10px, #8b0000 20px); border: 2px solid white; color: transparent; }
+.card.red { color: #e44; }
+.card.black { color: #222; }
+
+/* 自分の手札＆役名コンテナ (スマホアプリ風) */
+.hero-container-wrap { position: absolute; bottom: 10px; display: flex; flex-direction: column; align-items: center; z-index: 999; pointer-events: none; width: 100%; left: 0; }
+.hand-name-display { background: rgba(0, 0, 0, 0.8); border: 2px solid #555; color: #fff; border-radius: 12px; padding: 4px 12px; font-size: 14px; font-weight: bold; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+.hand-name-display.my-hand { background: linear-gradient(180deg, #1976d2, #0d47a1); border-color: #42a5f5; font-size: 16px; padding: 6px 16px; box-shadow: 0 0 10px rgba(66, 165, 245, 0.5); }
+.hero-cards-container { display: flex; gap: 15px; z-index: 1000;}
+.hero-cards-container .card { width: 100px; height: 140px; font-size: 36px; border-radius: 8px; box-shadow: 0 10px 20px rgba(0,0,0,0.7); border: 3px solid white; }
+
+.game-message { margin-top: 15px; background: rgba(0,0,0,0.7); padding: 8px 20px; border-radius: 15px; font-size: 16px; color: #fff; text-align: center; min-height: 20px; }
+
+/* プレイヤー座席 */
+.player-seat { position: absolute; width: 130px; background: var(--panel-bg); border-radius: 10px; padding: 10px 10px 20px 10px; text-align: center; transform: translate(-50%, -50%); border: 2px solid #444; transition: border-color 0.3s, box-shadow 0.3s; z-index: 5; }
+.player-seat.active-turn { border-color: var(--gold); box-shadow: 0 0 15px var(--gold); z-index: 8; }
+.player-seat.folded { opacity: 0.5; filter: grayscale(1); }
+.player-seat.eliminated { display: none; }
+.player-name { font-weight: bold; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.player-stack { color: var(--gold); font-size: 14px; margin-bottom: 3px; }
+.player-bet { background: #333; border-radius: 5px; font-size: 12px; padding: 2px; }
+.opponent-hand-badge { position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%); background: #d32f2f; border: 1px solid #ff5252; color: white; padding: 2px 8px; font-size: 12px; font-weight: bold; border-radius: 10px; white-space: nowrap; box-shadow: 0 2px 5px rgba(0,0,0,0.8); z-index: 10; }
+
+.player-cards { display: flex; justify-content: center; gap: 3px; margin-top: 5px; position: relative; }
+.player-cards .card { width: 35px; height: 50px; font-size: 14px; }
+
+/* 飛来アニメーション (Deal) iOS Safari対策のため3D系を除外 */
+.deal-anim { 
+    -webkit-animation: flyDeal 0.5s ease-out backwards;
+    animation: flyDeal 0.5s ease-out backwards; 
+}
+@-webkit-keyframes flyDeal {
+    0% { -webkit-transform: translate(var(--dx), var(--dy)) scale(0.1); opacity: 0; }
+    100% { -webkit-transform: translate(0, 0) scale(1); opacity: 1; }
+}
+@keyframes flyDeal {
+    0% { transform: translate(var(--dx), var(--dy)) scale(0.1); opacity: 0; }
+    100% { transform: translate(0, 0) scale(1); opacity: 1; }
+}
+
+/* めくりアニメーション (Flip) */
+.flip-anim { 
+    -webkit-animation: flipSlow 0.8s ease-in-out forwards;
+    animation: flipSlow 0.8s ease-in-out forwards; 
+}
+@-webkit-keyframes flipSlow {
+    0% { -webkit-transform: rotateY(180deg) scale(1.1); background: repeating-linear-gradient(45deg, #b22222, #b22222 10px, #8b0000 10px, #8b0000 20px); color: transparent; }
+    50% { -webkit-transform: rotateY(90deg) scale(1.2); color: transparent; background: #fff; }
+    100% { -webkit-transform: rotateY(0deg) scale(1); background: #fff; }
+}
+@keyframes flipSlow {
+    0% { transform: rotateY(180deg) scale(1.1); background: repeating-linear-gradient(45deg, #b22222, #b22222 10px, #8b0000 10px, #8b0000 20px); color: transparent; }
+    50% { transform: rotateY(90deg) scale(1.2); color: transparent; background: #fff; }
+    100% { transform: rotateY(0deg) scale(1); background: #fff; }
+}
+
+/* 固定8人配置 */
+.seat-0 { top: 85%; left: 50%; opacity: 0.5; }
+.seat-1 { top: 75%; left: 15%; }
+.seat-2 { top: 50%; left: 0%; }
+.seat-3 { top: 25%; left: 15%; }
+.seat-4 { top: 10%; left: 50%; }
+.seat-5 { top: 25%; left: 85%; }
+.seat-6 { top: 50%; left: 100%;}
+.seat-7 { top: 75%; left: 85%; }
+
+/* ----- アクションパネル ----- */
+.action-panel { background: #222; border-top: 2px solid var(--gold); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; z-index:300; position: relative;}
+.player-info-bot { font-size: 18px; min-width: 150px; }
+.player-info-bot .stack-info { color: var(--gold); font-weight: bold; }
+.controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.controls.disabled { opacity: 0.5; pointer-events: none; }
+.action-btn { padding: 12px 20px; font-size: 16px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; color: white; text-transform: uppercase; transition: transform 0.1s; }
+.action-btn:active { transform: scale(0.95); }
+.fold { background: #607d8b; }
+.check { background: #1976d2; }
+.call { background: #388e3c; }
+.raise { background: #fbc02d; color: #000; }
+.all-in { background: #d32f2f; box-shadow: 0 0 10px #d32f2f; border: 1px solid #ff5252; }
+.raise-group { display: flex; align-items: center; gap: 10px; background: #333; padding: 5px 15px; border-radius: 8px; }
+#raise-slider { width: 120px; cursor: pointer; }
+.raise-input-num { width: 70px; padding: 5px; border-radius: 4px; border: 1px solid var(--gold); background: #111; color: white; font-weight: bold; text-align: center; }
+
+/* モーダル (ヘルプ画面) */
+.modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); justify-content: center; align-items: center; }
+.modal-content { background-color: #2a2a2a; border: 2px solid var(--gold); border-radius: 10px; padding: 20px; width: 90%; max-width: 500px; color: white; position: relative; }
+.close { position: absolute; right: 20px; top: 15px; color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; }
+
+/* ★ スマホ等レスポンシブ時の調整 ★ */
+@media (max-width: 768px) {
+    .main-layout { flex-direction: column; }
+    
+    /* 右パネルだったものを「上部」に並び替える */
+    .right-panel { border-left: none; border-bottom: 2px solid #555; order: -1; min-height: 80px; width: 100%; padding: 5px; }
+    .odds-panel { padding: 5px; margin: 0; border: none; box-shadow: none; animation: none;}
+    .odds-player-row { display: inline-block; margin: 0 10px; border: none; padding: 0; }
+    .odds-panel h3 { display: none; }
+    .odds-name { font-size: 14px; display: inline; margin-right: 5px;}
+    .odds-percent { font-size: 24px; display: inline; }
+    
+    .table-container { padding: 5px; }
+    
+    /* スマホ画面だとテーブルが大きすぎるので縮小 */
+    .poker-table { width: 95vw; height: 50vh; border-width: 5px; }
+    
+    /* 自分のドデカ手札の位置とサイズを調整 (スマホだとアクションボタンに近いから小さめ) */
+    .hero-container-wrap { bottom: 0px; position: absolute; left: 50%; transform: translateX(-50%); width: auto; }
+    .hero-cards-container { gap: 5px; }
+    .hero-cards-container .card { width: 70px; height: 100px; font-size: 24px; border-width: 2px;}
+    .hand-name-display.my-hand { font-size: 12px; padding: 4px 8px; margin-bottom: 2px;}
+    
+    /* 小さなカード類もさらに縮小 */
+    .card-area { height: 60px; }
+    .card-area .card { width: 40px; height: 60px; font-size: 16px; }
+    .pot-info { font-size: 14px; padding: 3px 10px; margin-bottom: 5px; }
+    
+    .player-seat { width: 90px; padding: 5px 5px 10px 5px; font-size: 12px; border-radius: 6px; }
+    .player-name { font-size: 12px; }
+    .player-stack { font-size: 11px; }
+    .player-bet { font-size: 10px; }
+    .player-cards .card { width: 25px; height: 35px; font-size: 12px;}
+    
+    /* 座席をスマホの縦長画面に合わせて調整 */
+    .seat-0 { top: 80%; left: 50%; }
+    .seat-1 { top: 70%; left: 10%; }
+    .seat-2 { top: 50%; left: 0%; }
+    .seat-3 { top: 25%; left: 10%; }
+    .seat-4 { top: 10%; left: 50%; }
+    .seat-5 { top: 25%; left: 90%; }
+    .seat-6 { top: 50%; left: 100%;}
+    .seat-7 { top: 70%; left: 90%; }
+    
+    .action-panel { padding: 10px; flex-direction: column; align-items: stretch; gap: 5px;}
+    .controls { justify-content: center; gap: 5px;}
+    .action-btn { padding: 8px 12px; font-size: 14px; }
+    .raise-input-num { width: 60px; }
+}
