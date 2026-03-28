@@ -52,6 +52,12 @@ body {
 .odds-player-row { margin-bottom: 15px; border-bottom: 1px solid #555; padding-bottom: 10px; }
 .odds-name { font-size: 20px; font-weight: bold; color: white; display: block; margin-bottom: 5px; }
 .odds-percent { font-family: 'Impact', sans-serif; font-size: 46px; color: #ff5252; text-shadow: 2px 2px 0 #000, -1px -1px 0 #fff; line-height: 1; display: block; }
+
+.outs-container { margin-top: 10px; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
+.out-card { background: white; border-radius: 4px; padding: 2px 6px; font-size: 14px; font-weight: bold; border: 1px solid #ccc; color: black; box-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
+.out-card.red { color: #e44; }
+.outs-many { color: #4caf50; font-size: 16px; font-weight: bold; text-shadow: 1px 1px 2px black; }
+
 @keyframes pulsePanel { from { box-shadow: 0 0 20px rgba(255, 0, 0, 0.3); } to { box-shadow: 0 0 40px rgba(255, 0, 0, 0.8); } }
 
 /* ポーカーテーブル */
@@ -68,6 +74,14 @@ body {
 .card.hidden { background: repeating-linear-gradient(45deg, #b22222, #b22222 10px, #8b0000 10px, #8b0000 20px); border: 2px solid white; color: transparent; }
 .card.red { color: #e44; }
 .card.black { color: #222; }
+
+/* 役完成時の金枠ハイライト */
+.highlight-gold {
+    box-shadow: 0 0 15px 5px var(--gold) !important;
+    border: 3px solid var(--gold) !important;
+    transform: scale(1.05);
+    z-index: 25;
+}
 
 /* 自分の手札＆役名コンテナ (スマホアプリ風) */
 .hero-container-wrap { position: absolute; bottom: 10px; display: flex; flex-direction: column; align-items: center; z-index: 999; pointer-events: none; width: 100%; left: 0; }
@@ -180,6 +194,9 @@ body {
     .card-area { height: 60px; }
     .card-area .card { width: 40px; height: 60px; font-size: 16px; }
     .pot-info { font-size: 14px; padding: 3px 10px; margin-bottom: 5px; }
+    
+    /* 進行メッセージが手札と重ならないように上部へ移動 */
+    .game-message { position: absolute; top: 10px; width: 90%; left: 5%; font-size: 12px; margin-top: 0; z-index: 30; padding: 4px 10px; }
     
     .player-seat { width: 90px; padding: 5px 5px 10px 5px; font-size: 12px; border-radius: 6px; }
     .player-name { font-size: 12px; }

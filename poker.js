@@ -43,7 +43,9 @@ class PokerGame {
                 isEliminated: p.isEliminated,
                 cards: p.cards,
                 currentHandName: p.currentHandName,
-                winOdds: p.winOdds
+                bestHandCards: p.bestHandCards, // ★追加
+                winOdds: p.winOdds,
+                outs: p.outs // ★追加
             }))
         };
         this.io.to(this.roomCode).emit('gameStateUpdate', state);
@@ -69,14 +71,51 @@ class PokerGame {
                 const handStrs = p.cards.map(getCardStr).concat(boardStrs);
                 const hand = Hand.solve(handStrs);
                 p.currentHandName = hand.name;
+                
+                // ★修正: キッカー（役を構成していない部外者カード）を金枠から除外する
+                if (hand.name === 'High Card') {
+                    p.bestHandCards = [];
+                } else if (['Pair', 'Two Pair', 'Three of a Kind', 'Four of a Kind'].includes(hand.name)) {
+                    // ランクの出現個数をカウントして、複数回出現するカード（ペア部分）のみを抽出
+                    const counts = {};
+                    hand.cards.forEach(c => counts[c.value] = (counts[c.value] || 0) + 1);
+                    p.bestHandCards = hand.cards
+                        .filter(c => counts[c.value] > 1)
+                        .map(c => c.value + c.suit);
+                } else {
+                    // ストレート、フラッシュ、フルハウスなどは全5枚が必要
+                    p.bestHandCards = hand.cards.map(c => c.value + c.suit);
+                }
             } else {
-                p.currentHandName = 'ハイカード'; 
-                if (p.cards[0].rank === p.cards[1].rank) p.currentHandName = 'ワンペア';
+                const rankMap = {'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'T':10,'J':11,'Q':12,'K':13,'A':14};
+                const r0 = rankMap[p.cards[0].rank];
+                const r1 = rankMap[p.cards[1].rank];
+                
+                if (p.cards[0].rank === p.cards[1].rank) {
+                    p.currentHandName = 'ワンペア';
+                    p.bestHandCards = [ getCardStr(p.cards[0]), getCardStr(p.cards[1]) ];
+                } else {
+                    // ★修正: フロップが開く前などでペアになっていない（ハイカード）なら空にする
+                    p.currentHandName = 'ハイカード';
+                    p.bestHandCards = [];
+                }
             }
         });
     }
 
     startGame() {
+        // ★修正: ここで前回チップが0になった（飛んだ）プレイヤーを完全に配列から削除する
+        for (let i = this.players.length - 1; i >= 0; i--) {
+            if (this.players[i].isEliminated) {
+                this.players.splice(i, 1);
+            }
+        }
+        
+        // 削除後に dealerIndex 等が範囲外にならないよう調整
+        if (this.dealerIndex >= this.players.length && this.players.length > 0) {
+            this.dealerIndex = 0;
+        }
+
         const activeCount = this.players.filter(p => !p.isEliminated).length;
         if (activeCount < 2) {
             this.status = 'waiting';
@@ -301,6 +340,36 @@ class PokerGame {
         activePlayers.forEach((p, idx) => {
              p.winOdds = Math.round((wins[idx] / iterations) * 100);
         });
+
+        // アウツ（待ち牌）計算
+        this.calculateOuts(activePlayers, boardStrs, playersHoleStrs, needed);
+    }
+
+    calculateOuts(activePlayers, boardStrs, playersHoleStrs, needed) {
+        activePlayers.forEach(p => p.outs = []);
+        if (needed === 0) return;
+
+        const getCardStr = (card) => {
+            const suitMap = { '♠': 's', '♥': 'h', '♦': 'd', '♣': 'c' };
+            return card.rank + suitMap[card.suit];
+        };
+
+        for (let card of this.deck) {
+            const testCardStr = getCardStr(card);
+            const testBoard = [...boardStrs, testCardStr];
+            
+            let bestHands = [];
+            for (let pIdx = 0; pIdx < activePlayers.length; pIdx++) {
+                const handStrs = playersHoleStrs[pIdx].concat(testBoard);
+                const hand = Hand.solve(handStrs);
+                hand.pIdx = pIdx;
+                bestHands.push(hand);
+            }
+            const gWinners = Hand.winners(bestHands);
+            if (gWinners.length === 1) {
+                activePlayers[gWinners[0].pIdx].outs.push({ suit: card.suit, rank: card.rank });
+            }
+        }
     }
 
     handlePlayerWinRemaining(winner) {

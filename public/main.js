@@ -131,7 +131,7 @@ function renderGame(state) {
         myBetDisplay.textContent = me.currentBet;
         
         if (me.cards && me.cards.length > 0) {
-            renderCards(heroCardsContainer, me.cards, false, isNewDeal);
+            renderCards(heroCardsContainer, me.cards, false, isNewDeal, false, me.bestHandCards);
             if (me.currentHandName && state.phase !== 'pre-flop' && state.status !== 'waiting') {
                 myHandNameDisplay.style.display = 'block';
                 myHandNameDisplay.textContent = `現在: ${me.currentHandName}`;
@@ -156,7 +156,8 @@ function renderGame(state) {
     }
 
     potAmountDisplay.textContent = state.pot;
-    renderCards(communityCardsArea, state.communityCards, false, isNewCommunity);
+    const myBest = me ? me.bestHandCards : [];
+    renderCards(communityCardsArea, state.communityCards, false, isNewCommunity, false, myBest);
     renderPlayers(state, isNewDeal, isShowdownStart);
     renderOddsPanel(state);
 }
@@ -168,10 +169,25 @@ function renderOddsPanel(state) {
         let html = '';
         state.players.forEach(p => {
             if (p.winOdds !== null && p.winOdds !== undefined) {
+                let outsHtml = '';
+                if (p.outs && p.outs.length > 0) {
+                    if (p.outs.length > 15) {
+                        outsHtml = '<div class="outs-container"><span class="outs-many">有利 (Ahead)</span></div>';
+                    } else {
+                        outsHtml = '<div class="outs-container">';
+                        p.outs.forEach(o => {
+                            const sClass = (o.suit === '♥' || o.suit === '♦') ? 'red' : 'black';
+                            outsHtml += `<span class="out-card ${sClass}">${o.suit}${o.rank}</span>`;
+                        });
+                        outsHtml += '</div>';
+                    }
+                }
+                
                 html += `
                     <div class="odds-player-row">
                         <span class="odds-name">${p.name}</span>
                         <span class="odds-percent">${p.winOdds}%</span>
+                        ${outsHtml}
                     </div>
                 `;
             }
@@ -213,7 +229,7 @@ function updateActionButtons(me, state) {
     }
 }
 
-function renderCards(container, cards, hideAll = false, applyDealAnim = false, applyFlipAnim = false) {
+function renderCards(container, cards, hideAll = false, applyDealAnim = false, applyFlipAnim = false, bestHandCards = []) {
     container.innerHTML = '';
     cards.forEach(card => {
         const cardDiv = document.createElement('div');
@@ -224,6 +240,15 @@ function renderCards(container, cards, hideAll = false, applyDealAnim = false, a
             cardDiv.className = `card ${suitClass}`;
             cardDiv.innerHTML = `${card.suit}<br>${card.rank}`;
             
+            // 金枠（bestHandCardsに含まれていれば付与）
+            if (bestHandCards && bestHandCards.length > 0) {
+                const suitMap = { '♠': 's', '♥': 'h', '♦': 'd', '♣': 'c' };
+                const cStr = card.rank + suitMap[card.suit];
+                if (bestHandCards.includes(cStr)) {
+                    cardDiv.classList.add('highlight-gold');
+                }
+            }
+
             if (applyFlipAnim) {
                 // ショーダウン時のじらしフリップ演出
                 cardDiv.classList.add('flip-anim');
@@ -287,7 +312,7 @@ function renderPlayers(state, isNewDeal, isShowdownStart) {
                 const shouldHide = (state.status !== 'showdown' && state.status !== 'allin_showdown');
                 // ショーダウン開始時だけフリップアニメーション
                 const applyFlip = isShowdownStart && !shouldHide;
-                renderCards(cardsDiv, p.cards, shouldHide, isNewDeal, applyFlip);
+                renderCards(cardsDiv, p.cards, shouldHide, isNewDeal, applyFlip, shouldHide ? [] : p.bestHandCards);
             } else if (state.status !== 'waiting' && !p.folded && !p.isEliminated) {
                 renderCards(cardsDiv, [{},{}], true, isNewDeal);
             }

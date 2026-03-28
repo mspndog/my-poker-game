@@ -24,13 +24,23 @@ io.on('connection', (socket) => {
 
         const game = rooms[room];
         
-        // 定員チェック
-        if (game.players.length >= 8) {
-            socket.emit('roomError', 'このルームは満員（8人）です。');
-            return;
+        const existingPlayer = game.players.find(p => p.name === name);
+        if (existingPlayer) {
+            // 切断などで残っていた自分を引き継ぐ（複製させない）
+            existingPlayer.id = socket.id;
+            if (existingPlayer.isEliminated && game.status === 'waiting') {
+                existingPlayer.isEliminated = false;
+                existingPlayer.chips = 5000;
+            }
+        } else {
+            // 定員チェック
+            if (game.players.length >= 8) {
+                socket.emit('roomError', 'このルームは満員（8人）です。');
+                return;
+            }
+            game.addPlayer(socket.id, name);
         }
 
-        game.addPlayer(socket.id, name);
         socket.join(room);
         
         socket.emit('roomJoined', { room });
@@ -56,24 +66,40 @@ io.on('connection', (socket) => {
         }
     });
 
+    // 退出ボタン
+    socket.on('leaveRoom', () => {
+        handlePlayerLeave(socket);
+    });
+
     // 切断時
     socket.on('disconnect', () => {
         console.log('User disconnected:', socket.id);
+        handlePlayerLeave(socket);
+    });
+
+    function handlePlayerLeave(socketRef) {
         for (const roomCode in rooms) {
             const game = rooms[roomCode];
-            const idx = game.players.findIndex(p => p.id === socket.id);
+            const idx = game.players.findIndex(p => p.id === socketRef.id);
             if (idx !== -1) {
-                game.players.splice(idx, 1);
+                if (game.status === 'waiting') {
+                    // 待機中なら削除
+                    game.players.splice(idx, 1);
+                } else {
+                    // ゲーム中の場合は進行を壊さないため配列に残しfold扱いとする
+                    game.players[idx].folded = true;
+                    game.players[idx].id = null; // IDを空にしてアクション不能に
+                }
                 game.broadcastState();
                 
-                // 誰もいなくなったらメモリから削除
-                if (game.players.length === 0) {
+                // 実在する接続者が誰もいなくなったらメモリから削除
+                if (game.players.filter(p => p.id !== null).length === 0) {
                     delete rooms[roomCode];
                 }
                 break;
             }
         }
-    });
+    }
 });
 
 const PORT = process.env.PORT || 3000;
