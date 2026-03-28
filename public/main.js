@@ -34,6 +34,7 @@ const btnRaise = document.getElementById('btn-raise');
 const btnAllIn = document.getElementById('btn-allin');
 const raiseSlider = document.getElementById('raise-slider');
 const raiseInput = document.getElementById('raise-input');
+const btnStart = document.getElementById('btn-start'); // ★追加
 
 // ヘルプモーダル
 const helpBtn = document.getElementById('help-btn');
@@ -78,6 +79,8 @@ btnRaise.addEventListener('click', () => {
     socket.emit('playerAction', { action: 'raise', amount });
 });
 
+btnStart.addEventListener('click', () => socket.emit('startGame')); // ★追加
+
 raiseSlider.addEventListener('input', () => { raiseInput.value = raiseSlider.value; });
 raiseInput.addEventListener('input', () => {
     let val = parseInt(raiseInput.value) || 0;
@@ -101,6 +104,10 @@ socket.on('gameStateUpdate', (state) => {
 socket.on('gameMessage', (msg) => {
     gameMessage.textContent = msg;
 });
+socket.on('kicked', (msg) => {
+    alert(msg);
+    location.reload();
+}); // ★追加
 
 // --- 描画ロジック ---
 function showLoginScreen() {
@@ -152,6 +159,13 @@ function renderGame(state) {
             updateActionButtons(me, state);
         } else {
             controls.classList.add('disabled');
+        }
+
+        // オーナー開始ボタン表示制御
+        if (state.status === 'waiting' && state.ownerId === myId && state.players.length >= 2) {
+            btnStart.classList.remove('hidden');
+        } else {
+            btnStart.classList.add('hidden');
         }
     }
 
@@ -298,6 +312,11 @@ function renderPlayers(state, isNewDeal, isShowdownStart) {
         // ショーダウン時の役バッジ表示
         if ((state.status === 'showdown' || state.status === 'allin_showdown') && p.currentHandName && !p.folded) {
              html += `<div class="opponent-hand-badge">${p.currentHandName}</div>`;
+        }
+
+        // オーナーなら他人の席にKickボタンを表示
+        if (state.ownerId === myId && p.id !== myId) {
+            html += `<button class="kick-btn" onclick="socket.emit('kickPlayer', { targetId: '${p.id}' })">Kick</button>`;
         }
 
         seat.innerHTML = html;

@@ -24,10 +24,20 @@ io.on('connection', (socket) => {
 
         const game = rooms[room];
         
+        // ルームロックチェック
+        if (game.isLocked) {
+            socket.emit('roomError', 'このルームは既にゲーム開始しており、ロックされています。');
+            return;
+        }
+
         const existingPlayer = game.players.find(p => p.name === name);
         if (existingPlayer) {
             // 切断などで残っていた自分を引き継ぐ（複製させない）
             existingPlayer.id = socket.id;
+            // もしオーナーだった場合、自分のIDを最新に更新
+            if (game.ownerId === null || game.players.indexOf(existingPlayer) === 0) {
+                 // 既にゲーム内でのオーナーID更新ロジックはあるが念のため
+            }
             if (existingPlayer.isEliminated && game.status === 'waiting') {
                 existingPlayer.isEliminated = false;
                 existingPlayer.chips = 5000;
@@ -46,13 +56,41 @@ io.on('connection', (socket) => {
         socket.emit('roomJoined', { room });
         console.log(`${name} joined room: ${room}`);
         
-        // 人数が最低2人揃ったら、ゲーム待機状態から進行させる処理など
-        if (game.players.length >= 2 && game.status === 'waiting') {
-             game.startGame();
-        } else {
-             game.broadcastState();
+        // ★修正: 自動スタートを廃止し、常に状態を放送するだけにする
+        game.broadcastState();
+    });
+
+    // ★追加: ゲーム開始（オーナーのみ）
+    socket.on('startGame', () => {
+        const game = findGameBySocketId(socket.id);
+        if (game && game.ownerId === socket.id && game.status === 'waiting') {
+            if (game.players.length >= 2) {
+                game.startGame(true); // 初回開始フラグ
+            } else {
+                socket.emit('gameMessage', '開始するには最低2人のプレイヤーが必要です。');
+            }
         }
     });
+
+    // ★追加: プレイヤー追放（オーナーのみ）
+    socket.on('kickPlayer', ({ targetId }) => {
+        const game = findGameBySocketId(socket.id);
+        if (game && game.ownerId === socket.id) {
+            const targetSocket = io.sockets.sockets.get(targetId);
+            if (targetSocket) {
+                targetSocket.emit('kicked', 'オーナーにより追放されました。');
+                targetSocket.leave(game.roomCode);
+            }
+            game.kickPlayer(targetId);
+        }
+    });
+
+    function findGameBySocketId(id) {
+        for (const code in rooms) {
+            if (rooms[code].players.some(p => p.id === id)) return rooms[code];
+        }
+        return null;
+    }
 
     // プレイヤーのアクション受信
     socket.on('playerAction', (data) => {
@@ -85,10 +123,20 @@ io.on('connection', (socket) => {
                 if (game.status === 'waiting') {
                     // 待機中なら削除
                     game.players.splice(idx, 1);
+                    // オーナーが退出した場合、次の人に譲渡
+                    if (game.ownerId === socketRef.id && game.players.length > 0) {
+                        game.ownerId = game.players[0].id;
+                    }
                 } else {
                     // ゲーム中の場合は進行を壊さないため配列に残しfold扱いとする
                     game.players[idx].folded = true;
                     game.players[idx].id = null; // IDを空にしてアクション不能に
+                    // オーナーが退出してもゲーム自体は続くので、ownerId は一旦そのままか
+                    // (ただしアクションできないので、実質的には誰かに譲渡すべき)
+                    if (game.ownerId === socketRef.id) {
+                        const nextOwner = game.players.find(p => p.id !== null);
+                        if (nextOwner) game.ownerId = nextOwner.id;
+                    }
                 }
                 game.broadcastState();
                 

@@ -20,9 +20,18 @@ class PokerGame {
         this.dealerIndex = 0;
         this.currentPlayerIndex = 0;
         this.activePlayerId = null;
+
+        // ★追加: オーナー機能とルームロック用
+        this.ownerId = null;
+        this.isLocked = false;
     }
 
     addPlayer(id, name) {
+        // もし最初のプレイヤーならオーナーに設定
+        if (this.players.length === 0) {
+            this.ownerId = id;
+        }
+
         this.players.push({
             id, name, chips: 5000, cards: [], currentBet: 0, folded: false,
             isAllIn: false, hasActed: false, isEliminated: false,
@@ -37,15 +46,17 @@ class PokerGame {
             communityCards: this.communityCards, currentHighestBet: this.currentHighestBet,
             dealerIndex: this.dealerIndex, activePlayerId: this.activePlayerId,
             bigBlind: this.bigBlindAmount,
+            ownerId: this.ownerId, // ★追加
+            isLocked: this.isLocked, // ★追加
             players: this.players.map(p => ({
                 id: p.id, name: p.name, chips: p.chips, currentBet: p.currentBet,
                 folded: p.folded, isAllIn: p.isAllIn, hasActed: p.hasActed,
                 isEliminated: p.isEliminated,
                 cards: p.cards,
                 currentHandName: p.currentHandName,
-                bestHandCards: p.bestHandCards, // ★追加
+                bestHandCards: p.bestHandCards, 
                 winOdds: p.winOdds,
-                outs: p.outs // ★追加
+                outs: p.outs 
             }))
         };
         this.io.to(this.roomCode).emit('gameStateUpdate', state);
@@ -103,22 +114,35 @@ class PokerGame {
         });
     }
 
-    startGame() {
-        // ★修正: ここで前回チップが0になった（飛んだ）プレイヤーを完全に配列から削除する
+    startGame(isInitial = false) {
+        // ★修正: 初回開始時はルームをロックし、ディーラーをランダムに決定
+        if (isInitial) {
+            this.isLocked = true;
+            this.dealerIndex = Math.floor(Math.random() * this.players.length);
+        }
+
+        // ここで前回チップが0になった（飛んだ）プレイヤーを完全に配列から削除する
         for (let i = this.players.length - 1; i >= 0; i--) {
             if (this.players[i].isEliminated) {
                 this.players.splice(i, 1);
             }
         }
         
-        // 削除後に dealerIndex 等が範囲外にならないよう調整
-        if (this.dealerIndex >= this.players.length && this.players.length > 0) {
-            this.dealerIndex = 0;
+        // 削除後に ownerId や dealerIndex 等を調整
+        if (this.players.length > 0) {
+            // オーナーが消えていたら次の人に譲渡
+            if (!this.players.find(p => p.id === this.ownerId)) {
+                this.ownerId = this.players[0].id;
+            }
+            if (this.dealerIndex >= this.players.length) {
+                this.dealerIndex = 0;
+            }
         }
 
         const activeCount = this.players.filter(p => !p.isEliminated).length;
         if (activeCount < 2) {
             this.status = 'waiting';
+            this.isLocked = false; // 2人未満になったらロック解除
             this.sendMessage("参加可能なプレイヤーを待っています...");
             this.broadcastState();
             return;
@@ -184,6 +208,8 @@ class PokerGame {
         if (this.status !== 'playing' || this.activePlayerId !== playerId) return;
 
         const player = this.players.find(p => p.id === playerId);
+        if (!player || player.folded || player.isEliminated || player.cards.length === 0) return; // ★カード未所持・終了済み等のガード
+
         const toCall = this.currentHighestBet - player.currentBet;
         let actionLog = ""; let actionAmount = 0;
 
@@ -423,5 +449,33 @@ class PokerGame {
     checkEliminations() {
         this.players.forEach(p => { if (p.chips <= 0 && !p.isEliminated) { p.isEliminated = true; } });
     }
+
+    // ★キック機能追加
+    kickPlayer(playerId) {
+        const idx = this.players.findIndex(p => p.id === playerId);
+        if (idx !== -1) {
+            const kickedPlayer = this.players[idx];
+            this.players.splice(idx, 1);
+            
+            // オーナーが消えた場合の譲渡（キック対象がオーナーの場合）
+            if (this.ownerId === playerId && this.players.length > 0) {
+                this.ownerId = this.players[0].id;
+            }
+            
+            this.sendMessage(`${kickedPlayer.name} がオーナーにより追放されました。`);
+            
+            // ゲーム進行への影響チェック
+            if (this.status === 'playing') {
+                if (this.activePlayerId === playerId) {
+                    this.checkRoundState();
+                } else {
+                    this.broadcastState();
+                }
+            } else {
+                this.broadcastState();
+            }
+        }
+    }
 }
+
 module.exports = { PokerGame };
