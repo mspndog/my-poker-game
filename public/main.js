@@ -32,6 +32,10 @@ const btnCheck = document.getElementById('btn-check');
 const btnCall = document.getElementById('btn-call');
 const btnRaise = document.getElementById('btn-raise');
 const btnAllIn = document.getElementById('btn-allin');
+const btnTimeBank = document.getElementById('btn-timebank'); // ★追加
+const timeBankCount = document.getElementById('timebank-count'); // ★追加
+const clockTimer = document.getElementById('clock-timer'); // ★追加
+const timerSeconds = document.getElementById('timer-seconds'); // ★追加
 const raiseSlider = document.getElementById('raise-slider');
 const raiseInput = document.getElementById('raise-input');
 const btnStart = document.getElementById('btn-start'); // ★追加
@@ -73,6 +77,7 @@ btnFold.addEventListener('click', () => socket.emit('playerAction', { action: 'f
 btnCheck.addEventListener('click', () => socket.emit('playerAction', { action: 'check' }));
 btnCall.addEventListener('click', () => socket.emit('playerAction', { action: 'call' }));
 btnAllIn.addEventListener('click', () => socket.emit('playerAction', { action: 'allin' }));
+btnTimeBank.addEventListener('click', () => socket.emit('useTimeBank')); // ★追加
 
 btnRaise.addEventListener('click', () => {
     const amount = parseInt(raiseInput.value);
@@ -107,7 +112,32 @@ socket.on('gameMessage', (msg) => {
 socket.on('kicked', (msg) => {
     alert(msg);
     location.reload();
-}); // ★追加
+});
+
+// --- タイマー更新ループ ---
+setInterval(() => {
+    if (!currentGameState || !currentGameState.turnEndTime) {
+        clockTimer.classList.add('hidden');
+        return;
+    }
+
+    const now = Date.now();
+    const remaining = Math.max(0, Math.ceil((currentGameState.turnEndTime - now) / 1000));
+    
+    if (currentGameState.status === 'playing') {
+        clockTimer.classList.remove('hidden');
+        timerSeconds.textContent = remaining;
+        
+        // 10秒以下で警告表示
+        if (remaining <= 10) {
+            clockTimer.classList.add('warning');
+        } else {
+            clockTimer.classList.remove('warning');
+        }
+    } else {
+        clockTimer.classList.add('hidden');
+    }
+}, 500);
 
 // --- 描画ロジック ---
 function showLoginScreen() {
@@ -240,6 +270,15 @@ function updateActionButtons(me, state) {
         btnRaise.style.display = 'none';
         raiseSlider.style.display = 'none';
         raiseInput.style.display = 'none';
+    }
+
+    // タイムバンクボタンの制御
+    if (me.timeBank >= 30) {
+        btnTimeBank.classList.remove('hidden');
+        btnTimeBank.disabled = false;
+        timeBankCount.textContent = me.timeBank;
+    } else {
+        btnTimeBank.classList.add('hidden');
     }
 }
 

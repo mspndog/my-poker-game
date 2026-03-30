@@ -104,6 +104,18 @@ io.on('connection', (socket) => {
         }
     });
 
+    // タイムバンク使用
+    socket.on('useTimeBank', () => {
+        for (const roomCode in rooms) {
+            const game = rooms[roomCode];
+            const player = game.players.find(p => p.id === socket.id);
+            if (player) {
+                game.useTimeBank(socket.id);
+                break;
+            }
+        }
+    });
+
     // 退出ボタン
     socket.on('leaveRoom', () => {
         handlePlayerLeave(socket);

@@ -24,6 +24,10 @@ class PokerGame {
         // ★追加: オーナー機能とルームロック用
         this.ownerId = null;
         this.isLocked = false;
+
+        // ★追加: ターンタイマー用
+        this.turnTimer = null;
+        this.turnEndTime = null;
     }
 
     addPlayer(id, name) {
@@ -35,7 +39,8 @@ class PokerGame {
         this.players.push({
             id, name, chips: 5000, cards: [], currentBet: 0, folded: false,
             isAllIn: false, hasActed: false, isEliminated: false,
-            currentHandName: '', winOdds: null
+            currentHandName: '', winOdds: null,
+            timeBank: 60 // ★追加: タイムバンク（秒）
         });
     }
 
@@ -46,8 +51,9 @@ class PokerGame {
             communityCards: this.communityCards, currentHighestBet: this.currentHighestBet,
             dealerIndex: this.dealerIndex, activePlayerId: this.activePlayerId,
             bigBlind: this.bigBlindAmount,
-            ownerId: this.ownerId, // ★追加
-            isLocked: this.isLocked, // ★追加
+            ownerId: this.ownerId, 
+            isLocked: this.isLocked,
+            turnEndTime: this.turnEndTime, // ★追加
             players: this.players.map(p => ({
                 id: p.id, name: p.name, chips: p.chips, currentBet: p.currentBet,
                 folded: p.folded, isAllIn: p.isAllIn, hasActed: p.hasActed,
@@ -56,7 +62,8 @@ class PokerGame {
                 currentHandName: p.currentHandName,
                 bestHandCards: p.bestHandCards, 
                 winOdds: p.winOdds,
-                outs: p.outs 
+                outs: p.outs,
+                timeBank: p.timeBank // ★追加
             }))
         };
         this.io.to(this.roomCode).emit('gameStateUpdate', state);
@@ -190,6 +197,7 @@ class PokerGame {
         this.activePlayerId = this.players[this.currentPlayerIndex].id;
         
         this.sendMessage("ゲーム開始！プリフロップです。");
+        this.startTurnTimer(); // ★追加
         this.broadcastState();
     }
 
@@ -206,6 +214,7 @@ class PokerGame {
 
     handleAction(playerId, actionData) {
         if (this.status !== 'playing' || this.activePlayerId !== playerId) return;
+        this.clearTurnTimer(); // ★追加
 
         const player = this.players.find(p => p.id === playerId);
         if (!player || player.folded || player.isEliminated || player.cards.length === 0) return; // ★カード未所持・終了済み等のガード
@@ -270,6 +279,7 @@ class PokerGame {
         }
         if (loopCount >= this.players.length) { this.startNextPhase(); return; }
         this.currentPlayerIndex = nextIdx; this.activePlayerId = p.id;
+        this.startTurnTimer(); // ★追加
         this.broadcastState();
     }
 
@@ -280,6 +290,7 @@ class PokerGame {
             else p.hasActed = true;
         });
         this.currentHighestBet = 0;
+        this.clearTurnTimer(); // ★念のためクリア
 
         if (this.phase === 'pre-flop') {
             this.phase = 'flop'; this.communityCards.push(this.deck.pop(), this.deck.pop(), this.deck.pop());
@@ -320,6 +331,7 @@ class PokerGame {
         }
         this.currentPlayerIndex = nextIdx;
         this.activePlayerId = p.id;
+        this.startTurnTimer(); // ★追加
         this.broadcastState();
     }
 
@@ -399,6 +411,7 @@ class PokerGame {
     }
 
     handlePlayerWinRemaining(winner) {
+        this.clearTurnTimer(); // ★追加
         this.status = 'showdown'; this.activePlayerId = null;
         winner.chips += this.pot;
         this.sendMessage(`${winner.name} 以外がフォールドしたため不戦勝！ ${this.pot} チップ獲得！`);
@@ -409,6 +422,7 @@ class PokerGame {
     }
 
     handleShowdown() {
+        this.clearTurnTimer(); // ★追加
         this.status = 'showdown'; this.activePlayerId = null;
         const activePlayers = this.players.filter(p => !p.folded && !p.isEliminated);
         
@@ -475,6 +489,56 @@ class PokerGame {
                 this.broadcastState();
             }
         }
+    }
+
+    // ★ターンタイマー関連
+    startTurnTimer() {
+        this.clearTurnTimer();
+        const turnSeconds = 30;
+        this.turnEndTime = Date.now() + (turnSeconds * 1000);
+        
+        this.turnTimer = setTimeout(() => {
+            console.log(`Auto-fold triggered for: ${this.activePlayerId}`);
+            this.autoFold(this.activePlayerId);
+        }, turnSeconds * 1000);
+    }
+
+    clearTurnTimer() {
+        if (this.turnTimer) {
+            clearTimeout(this.turnTimer);
+            this.turnTimer = null;
+        }
+        this.turnEndTime = null;
+    }
+
+    useTimeBank(playerId) {
+        if (this.activePlayerId !== playerId || this.status !== 'playing') return;
+        
+        const player = this.players.find(p => p.id === playerId);
+        if (player && player.timeBank >= 30) {
+            player.timeBank -= 30;
+            this.clearTurnTimer();
+            
+            // 現在の残り時間に30秒加算する形にするか、30秒まるっと追加するか
+            // ユーザーのリクエストは「30秒プラスされる」なので、現在の制限時間に+30s
+            // server-sideでは turnEndTime を現在の値 + 30s に更新してタイマー再起動
+            const currentRemaining = Math.max(0, this.turnEndTime - Date.now());
+            const newTurnSeconds = (currentRemaining / 1000) + 30;
+            
+            this.turnEndTime = Date.now() + (newTurnSeconds * 1000);
+            this.turnTimer = setTimeout(() => {
+                this.autoFold(this.activePlayerId);
+            }, newTurnSeconds * 1000);
+            
+            this.sendMessage(`${player.name} がタイムバンクを使用しました（残り ${player.timeBank}秒）`);
+            this.broadcastState();
+        }
+    }
+
+    autoFold(playerId) {
+        if (this.activePlayerId !== playerId) return;
+        console.log(`Auto-folding player ${playerId}`);
+        this.handleAction(playerId, { action: 'fold' });
     }
 }
 

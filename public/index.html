@@ -32,6 +32,12 @@
             <button id="leave-btn" class="btn small-btn">退出</button>
         </div>
 
+        <!-- 画面左上の時計型タイマー -->
+        <div id="clock-timer" class="clock-timer hidden">
+            <div class="clock-icon">🕒</div>
+            <div id="timer-seconds" class="timer-seconds">30</div>
+        </div>
+
         <div class="main-layout">
             <div class="table-container">
                 <div class="poker-table">
@@ -85,6 +91,7 @@
                 <button id="btn-fold" class="action-btn fold">Fold</button>
                 <button id="btn-check" class="action-btn check">Check</button>
                 <button id="btn-call" class="action-btn call">Call</button>
+                <button id="btn-timebank" class="action-btn timebank hidden">Time Bank (<span id="timebank-count">60</span>s)</button>
                 
                 <div class="raise-group">
                     <button id="btn-raise" class="action-btn raise">Raise</button>

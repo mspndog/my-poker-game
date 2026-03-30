@@ -40,6 +40,33 @@ body {
 .small-btn { padding: 5px 15px; background: #333; color: white; font-size: 14px; margin-left:10px;}
 .help-btn { background: #1976d2; border: 1px solid #42a5f5; }
 
+/* 左上の時計タイマー */
+.clock-timer {
+    position: absolute;
+    top: 60px;
+    left: 20px;
+    z-index: 500;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid var(--gold);
+    border-radius: 50px;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    transition: transform 0.3s, opacity 0.3s;
+}
+.clock-timer.hidden { opacity: 0; transform: translateX(-20px); pointer-events: none; }
+.clock-icon { font-size: 24px; animation: rotateClock 2s linear infinite; }
+.timer-seconds { font-family: 'Impact', sans-serif; font-size: 32px; color: var(--gold); min-width: 40px; text-align: center; }
+
+/* 残り時間わずかの警告 */
+.clock-timer.warning { border-color: #ff4444; box-shadow: 0 0 20px rgba(255, 68, 68, 0.6); animation: pulseWarning 0.5s infinite; }
+.clock-timer.warning .timer-seconds { color: #ff4444; }
+
+@keyframes rotateClock { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes pulseWarning { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
 /* メインレイアウト（テーブルと右パネル） */
 .main-layout { display: flex; flex: 1; overflow: hidden; position: relative; }
 .table-container { flex: 7; display: flex; justify-content: center; align-items: center; position: relative; padding: 20px; }
@@ -156,6 +183,9 @@ body {
 .fold { background: #607d8b; }
 .check { background: #1976d2; }
 .call { background: #388e3c; }
+.timebank { background: linear-gradient(180deg, #6a1b9a 0%, #4a148c 100%); border: 1px solid #9c27b0; min-width: 120px; }
+.timebank:disabled { opacity: 0.5; cursor: not-allowed; }
+.timebank.hidden { display: none; }
 .raise { background: #fbc02d; color: #000; }
 .all-in { background: #d32f2f; box-shadow: 0 0 10px #d32f2f; border: 1px solid #ff5252; }
 .raise-group { display: flex; align-items: center; gap: 10px; background: #333; padding: 5px 15px; border-radius: 8px; }
