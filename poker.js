@@ -516,14 +516,12 @@ class PokerGame {
         
         const player = this.players.find(p => p.id === playerId);
         if (player && player.timeBank >= 30) {
+            // 現在の残り時間を先に計算しておく（clearTurnTimerでnullになるため）
+            const currentRemaining = Math.max(0, (this.turnEndTime || (Date.now() + 30000)) - Date.now());
+            const newTurnSeconds = (currentRemaining / 1000) + 30;
+
             player.timeBank -= 30;
             this.clearTurnTimer();
-            
-            // 現在の残り時間に30秒加算する形にするか、30秒まるっと追加するか
-            // ユーザーのリクエストは「30秒プラスされる」なので、現在の制限時間に+30s
-            // server-sideでは turnEndTime を現在の値 + 30s に更新してタイマー再起動
-            const currentRemaining = Math.max(0, this.turnEndTime - Date.now());
-            const newTurnSeconds = (currentRemaining / 1000) + 30;
             
             this.turnEndTime = Date.now() + (newTurnSeconds * 1000);
             this.turnTimer = setTimeout(() => {
