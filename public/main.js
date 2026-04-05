@@ -201,7 +201,8 @@ function renderGame(state) {
 
     potAmountDisplay.textContent = state.pot;
     const myBest = me ? me.bestHandCards : [];
-    renderCards(communityCardsArea, state.communityCards, false, isNewCommunity, false, myBest);
+    const isNewTurnOrRiver = isNewCommunity && (state.phase === 'turn' || state.phase === 'river');
+    renderCards(communityCardsArea, state.communityCards, false, isNewCommunity && state.phase === 'flop', false, myBest, isNewTurnOrRiver);
     renderPlayers(state, isNewDeal, isShowdownStart);
     renderOddsPanel(state);
 }
@@ -282,9 +283,9 @@ function updateActionButtons(me, state) {
     }
 }
 
-function renderCards(container, cards, hideAll = false, applyDealAnim = false, applyFlipAnim = false, bestHandCards = []) {
+function renderCards(container, cards, hideAll = false, applyDealAnim = false, applyFlipAnim = false, bestHandCards = [], applyTeaseFlipLast = false) {
     container.innerHTML = '';
-    cards.forEach(card => {
+    cards.forEach((card, index) => {
         const cardDiv = document.createElement('div');
         if (hideAll) {
             cardDiv.className = 'card hidden';
@@ -308,6 +309,11 @@ function renderCards(container, cards, hideAll = false, applyDealAnim = false, a
                 cardDiv.style.animationDelay = `${animationCounter * 0.4}s`;
                 animationCounter++;
             }
+
+            if (applyTeaseFlipLast && index === cards.length - 1) {
+                // ターン・リバーのじらし演出
+                cardDiv.classList.add('tease-flip-anim');
+            }
         }
         
         if (applyDealAnim) {
@@ -330,7 +336,8 @@ function renderPlayers(state, isNewDeal, isShowdownStart) {
     if (myIndex === -1) myIndex = 0;
 
     state.players.forEach((p, i) => {
-        let displaySeat = (i - myIndex + 8) % 8;
+        const seatMap = [0, 1, 7, 2, 6, 3, 5, 4];
+        let displaySeat = seatMap[(i - myIndex + 8) % 8];
         const seat = document.createElement('div');
         seat.className = `player-seat seat-${displaySeat}`;
         

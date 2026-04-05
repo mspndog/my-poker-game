@@ -162,6 +162,22 @@ body {
     100% { transform: rotateY(0deg) scale(1); background: #fff; }
 }
 
+/* じらしめくりアニメーション (Tease Flip) for Turn/River */
+.tease-flip-anim { 
+    -webkit-animation: flipTease 1.2s ease-in-out forwards;
+    animation: flipTease 1.2s ease-in-out forwards; 
+}
+@-webkit-keyframes flipTease {
+    0%, 66% { -webkit-transform: rotateY(180deg) scale(1.1); background: repeating-linear-gradient(45deg, #b22222, #b22222 10px, #8b0000 10px, #8b0000 20px); color: transparent; }
+    80% { -webkit-transform: rotateY(90deg) scale(1.2); color: transparent; background: #fff; }
+    100% { -webkit-transform: rotateY(0deg) scale(1); background: #fff; }
+}
+@keyframes flipTease {
+    0%, 66% { transform: rotateY(180deg) scale(1.1); background: repeating-linear-gradient(45deg, #b22222, #b22222 10px, #8b0000 10px, #8b0000 20px); color: transparent; }
+    80% { transform: rotateY(90deg) scale(1.2); color: transparent; background: #fff; }
+    100% { transform: rotateY(0deg) scale(1); background: #fff; }
+}
+
 /* 固定8人配置 */
 .seat-0 { top: 85%; left: 50%; opacity: 0.5; }
 .seat-1 { top: 75%; left: 15%; }
